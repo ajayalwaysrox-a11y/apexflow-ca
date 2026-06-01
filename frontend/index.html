@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexFlow // Work & Attendance Tracker</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for robust icon library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK (Compat mode for script tag support) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <!-- Chart.js for premium analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- LOGIN SCREEN OVERLAY -->
+    <div class="login-container" id="login-screen">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <h2>ApexFlow</h2>
+            </div>
+            <h3>Sign In to Workspace</h3>
+            <p class="text-muted">Access synchronized tasks and logs</p>
+            
+            <form id="login-form">
+                <div class="form-group margin-bottom-3">
+                    <label for="login-email" class="form-label">Email Address</label>
+                    <input type="email" id="login-email" class="form-control" placeholder="e.g. alex@apexflow.com" required autocomplete="username">
+                </div>
+                <div class="form-group margin-bottom-4">
+                    <label for="login-password" class="form-label">Password</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <div id="login-error" class="login-error-message" style="display: none; color: var(--danger); font-size: 0.8rem; margin-bottom: 1rem; font-weight: 600;">
+                    Invalid credentials. Please try again.
+                </div>
+                <button type="submit" class="btn btn-primary w-full btn-lg">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+            </form>
+            <div class="login-credentials-tip text-xs text-muted" style="margin-top: 1.5rem; text-align: left; font-size: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                <strong>Demo Accounts:</strong><br>
+                • Admin: <code>alex@apexflow.com</code> / <code>admin123</code><br>
+                • Manager: <code>sarah@apexflow.com</code> / <code>manager123</code><br>
+                • Staff: <code>liam@apexflow.com</code> / <code>staff123</code>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <h2>ApexFlow</h2>
+            </div>
+
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" data-target="dashboard-section">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="menu-item" data-target="tasks-section">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Task Board</span>
+                </a>
+                <a href="#" class="menu-item" data-target="attendance-section">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Attendance</span>
+                </a>
+                <a href="#" class="menu-item" data-target="staff-section" id="nav-staff-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Staff Directory</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-user-card">
+                <div class="user-avatar" id="sidebar-user-avatar">AD</div>
+                <div class="user-info">
+                    <h4 id="sidebar-user-name">Alex Dev</h4>
+                    <span id="sidebar-user-role">Administrator</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <!-- TOP BAR -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <h1 id="page-title">Dashboard Overview</h1>
+                    <p id="page-subtitle" class="text-muted">Welcome back, track your business efficiency.</p>
+                </div>
+                <div class="top-bar-right">
+                    <!-- Sync and Session Controls -->
+                    <span class="sync-indicator badge badge-sky" id="sync-status" style="margin-right: 0.5rem;">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Connected
+                    </span>
+                    <button class="btn btn-outline btn-sm" id="open-sync-modal-btn" style="margin-right: 0.5rem;" title="Cloud Sync Settings">
+                        <i class="fa-solid fa-cloud"></i> Sync Settings
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" id="logout-btn">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </div>
+            </header>
+
+            <!-- SECTION: DASHBOARD OVERVIEW -->
+            <section id="dashboard-section" class="content-section active">
+                <!-- STATS CARDS GRID -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-light-blue">
+                            <i class="fa-solid fa-tasks text-primary"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Assigned Works</span>
+                            <h3 id="stat-total-tasks" class="stat-value">0</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon bg-light-yellow">
+                            <i class="fa-solid fa-hourglass-half text-warning"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Overall Pending Works</span>
+                            <h3 id="stat-pending-tasks" class="stat-value">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon bg-light-green">
+                            <i class="fa-solid fa-circle-check text-success"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Completed Works</span>
+                            <h3 id="stat-completed-tasks" class="stat-value">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon bg-light-purple">
+                            <i class="fa-solid fa-user-check text-purple"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Today's Attendance</span>
+                            <h3 id="stat-attendance-rate" class="stat-value">0%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS & QUICK WORK SUMMARY -->
+                <div class="dashboard-grid">
+                    <!-- Left: Charts panel -->
+                    <div class="grid-card col-span-2">
+                        <div class="card-header">
+                            <h3>Analytics Dashboard</h3>
+                            <span class="badge badge-sky">Live Data</span>
+                        </div>
+                        <div class="card-body chart-wrapper">
+                            <canvas id="work-distribution-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick clocking panel & Leave pool -->
+                    <div class="grid-card">
+                        <div class="card-header">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <div class="card-body flex-col gap-4">
+                            <!-- Quick Clock Widget -->
+                            <div class="quick-clock-widget">
+                                <div class="clock-display" id="live-clock">12:00:00 PM</div>
+                                <div class="clock-actions-row">
+                                    <button class="btn btn-primary w-full" id="dash-clock-in-btn">
+                                        <i class="fa-solid fa-right-to-bracket"></i> Clock In
+                                    </button>
+                                    <button class="btn btn-outline w-full" id="dash-clock-out-btn" disabled>
+                                        <i class="fa-solid fa-right-from-bracket"></i> Clock Out
+                                    </button>
+                                </div>
+                                <div class="clock-status-tag" id="dash-clock-status">
+                                    Status: <span class="badge badge-danger">Not Clocked In</span>
+                                </div>
+                            </div>
+
+                            <!-- Leave Balance Widget -->
+                            <div class="leave-balance-widget">
+                                <h4>My Leave Status (Annual)</h4>
+                                <div class="leave-stats-row">
+                                    <div class="leave-stat-item">
+                                        <span class="num text-primary" id="dash-leaves-remaining">0</span>
+                                        <span class="lbl">Available</span>
+                                    </div>
+                                    <div class="leave-stat-item border-left">
+                                        <span class="num text-muted" id="dash-leaves-taken">0</span>
+                                        <span class="lbl">Taken</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PENDING WORK BY PERSON LIST -->
+                <div class="grid-card margin-top-6">
+                    <div class="card-header flex-row space-between">
+                        <h3>Staff Workload Summary</h3>
+                        <span class="text-muted text-sm">Pending items by individual</span>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table" id="workload-table">
+                            <thead>
+                                <tr>
+                                    <th>Staff Member</th>
+                                    <th>Role</th>
+                                    <th>Pending Works</th>
+                                    <th>Completed Works</th>
+                                    <th>Workload Bar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Loaded dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: TASK BOARD -->
+            <section id="tasks-section" class="content-section">
+                <div class="action-bar">
+                    <div class="filter-group">
+                        <button class="btn-filter active" data-filter="all">All Works</button>
+                        <button class="btn-filter" data-filter="pending">Pending</button>
+                        <button class="btn-filter" data-filter="completed">Completed</button>
+                    </div>
+                    <!-- Visible only to Admin -->
+                    <button class="btn btn-primary admin-only-element" id="open-add-task-modal-btn">
+                        <i class="fa-solid fa-plus"></i> Assign New Work
+                    </button>
+                </div>
+
+                <!-- Tasks Listing Table -->
+                <div class="grid-card">
+                    <div class="card-body table-responsive">
+                        <table class="data-table" id="tasks-table">
+                            <thead>
+                                <tr>
+                                    <th>Task Title</th>
+                                    <th>Assigned To</th>
+                                    <th>Assigned Date</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                    <th>Completed On</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasks-table-body">
+                                <!-- Loaded dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: ATTENDANCE -->
+            <section id="attendance-section" class="content-section">
+                <!-- Row containing Employee Console & Administrative Log -->
+                <div class="dashboard-grid">
+                    <!-- Left: Staff Clocking Terminal (For any role) -->
+                    <div class="grid-card">
+                        <div class="card-header">
+                            <h3>Attendance Console</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="console-box">
+                                <div class="console-time-view">
+                                    <i class="fa-regular fa-clock clock-pulse text-primary"></i>
+                                    <h2 id="console-time">12:00:00 PM</h2>
+                                    <p id="console-date">Saturday, May 30, 2026</p>
+                                </div>
+
+                                <div class="attendance-settings-box">
+                                    <label class="form-label">Day Schedule Option</label>
+                                    <div class="radio-card-group">
+                                        <label class="radio-card-label">
+                                            <input type="radio" name="attendance-type" value="Full" checked id="att-type-full">
+                                            <div class="radio-card-content">
+                                                <span class="title">Full Day</span>
+                                                <span class="desc">Standard Shift</span>
+                                            </div>
+                                        </label>
+                                        <label class="radio-card-label">
+                                            <input type="radio" name="attendance-type" value="Half" id="att-type-half">
+                                            <div class="radio-card-content">
+                                                <span class="title">Half Day</span>
+                                                <span class="desc">0.5 Leaves Deducted</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="clocking-triggers">
+                                    <button class="btn btn-primary btn-lg" id="console-clock-in-btn">
+                                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Clock In
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-lg" id="console-clock-out-btn" disabled>
+                                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Clock Out
+                                    </button>
+                                </div>
+
+                                <div class="logs-summary-mini margin-top-4">
+                                    <div class="mini-log-row">
+                                        <span>Clock In Time:</span>
+                                        <strong id="att-summary-in">-</strong>
+                                    </div>
+                                    <div class="mini-log-row">
+                                        <span>Clock Out Time:</span>
+                                        <strong id="att-summary-out">-</strong>
+                                    </div>
+                                    <div class="mini-log-row">
+                                        <span>Shift Calculated:</span>
+                                        <strong id="att-summary-shift">-</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick Request Leave -->
+                    <div class="grid-card">
+                        <div class="card-header">
+                            <h3>Request Time Off (Leaves)</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="leave-request-form">
+                                <div class="form-group margin-bottom-3">
+                                    <label for="leave-date" class="form-label">Date for Leave</label>
+                                    <input type="date" id="leave-date" class="form-control" required>
+                                </div>
+                                <div class="form-group margin-bottom-3">
+                                    <label class="form-label">Leave Scope</label>
+                                    <select id="leave-scope" class="form-select">
+                                        <option value="Full">Full Day Leave (1.0 Leave)</option>
+                                        <option value="Half">Half Day Leave (0.5 Leave)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group margin-bottom-4">
+                                    <label for="leave-reason" class="form-label">Reason / Remarks</label>
+                                    <textarea id="leave-reason" class="form-control" rows="3" placeholder="Describe the reason briefly..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-full">
+                                    <i class="fa-solid fa-paper-plane"></i> Submit Leave Request
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin & Manager View: Full Daily Logs Sheet & Leaves Tracker -->
+                <div class="grid-card margin-top-6 manager-only-element">
+                    <div class="card-header flex-row space-between">
+                        <h3>Employee Daily Attendance Log</h3>
+                        <div class="flex-row gap-2">
+                            <input type="date" id="attendance-filter-date" class="form-control form-control-sm">
+                            <button class="btn btn-outline btn-sm" id="clear-attendance-filter-btn">Reset</button>
+                        </div>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table" id="attendance-log-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Staff Member</th>
+                                    <th>Work Schedule</th>
+                                    <th>Clock-In</th>
+                                    <th>Clock-Out</th>
+                                    <th>Calculation / Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Leave Balances & Quota Controls (Admin-Only) -->
+                <div class="grid-card margin-top-6 admin-only-element">
+                    <div class="card-header">
+                        <h3>Staff Leave Quotas & Balances</h3>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table" id="leave-quota-table">
+                            <thead>
+                                <tr>
+                                    <th>Staff Member</th>
+                                    <th>Annual Leave Quota</th>
+                                    <th>Total Leaves Taken</th>
+                                    <th>Remaining Balance</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: STAFF DIRECTORY -->
+            <section id="staff-section" class="content-section">
+                <!-- Action Bar -->
+                <div class="action-bar admin-only-element">
+                    <div></div> <!-- Spacer -->
+                    <button class="btn btn-primary" id="open-add-staff-modal-btn">
+                        <i class="fa-solid fa-user-plus"></i> Register New Staff
+                    </button>
+                </div>
+
+                <!-- Staff Grid Layout -->
+                <div class="staff-grid" id="staff-cards-container">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD TASK -->
+    <div class="modal-backdrop" id="add-task-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Assign New Task</h3>
+                <button class="btn-close-modal" id="close-task-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-task-form">
+                    <div class="form-group margin-bottom-3">
+                        <label for="task-title" class="form-label">Task Title</label>
+                        <input type="text" id="task-title" class="form-control" placeholder="e.g. Prepare monthly audit logs" required>
+                    </div>
+                    <div class="form-group margin-bottom-3">
+                        <label for="task-desc" class="form-label">Description (Optional)</label>
+                        <textarea id="task-desc" class="form-control" rows="3" placeholder="Provide extra context..."></textarea>
+                    </div>
+                    <div class="form-group margin-bottom-3">
+                        <label for="task-assignee" class="form-label">Assign To</label>
+                        <select id="task-assignee" class="form-select" required>
+                            <!-- Populated dynamically by JS -->
+                        </select>
+                    </div>
+                    <div class="grid-2-cols margin-bottom-4">
+                        <div class="form-group">
+                            <label for="task-due" class="form-label">Due Date</label>
+                            <input type="date" id="task-due" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-priority" class="form-label">Priority</label>
+                            <select id="task-priority" class="form-select">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-task-modal-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Assign Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD STAFF -->
+    <div class="modal-backdrop" id="add-staff-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Register New Staff</h3>
+                <button class="btn-close-modal" id="close-staff-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-staff-form">
+                    <div class="form-group margin-bottom-3">
+                        <label for="staff-name" class="form-label">Full Name</label>
+                        <input type="text" id="staff-name" class="form-control" placeholder="e.g. Sarah Jenkins" required>
+                    </div>
+                    <div class="form-group margin-bottom-3">
+                        <label for="staff-email" class="form-label">Email Address</label>
+                        <input type="email" id="staff-email" class="form-control" placeholder="e.g. sarah@business.com" required>
+                    </div>
+                    <div class="grid-2-cols margin-bottom-4">
+                        <div class="form-group">
+                            <label for="staff-role" class="form-label">System Role</label>
+                            <select id="staff-role" class="form-select">
+                                <option value="User">Standard Staff (User)</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Admin">Administrator</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="staff-quota" class="form-label">Annual Leave Quota (Days)</label>
+                            <input type="number" id="staff-quota" class="form-control" value="20" min="0" required>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-staff-modal-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Register Staff</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CLOUD SYNC SETTINGS -->
+    <div class="modal-backdrop" id="sync-settings-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Cloud Sync Settings</h3>
+                <button class="btn-close-modal" id="close-sync-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="sync-settings-form">
+                    <div class="form-group margin-bottom-3">
+                        <label for="sync-key" class="form-label">Company Sync Key</label>
+                        <input type="text" id="sync-key" class="form-control" placeholder="default-company-123" required>
+                        <span class="text-xs text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
+                            Use the same Sync Key on other systems to share and sync the database in real-time.
+                        </span>
+                    </div>
+                    <div class="form-group margin-bottom-3">
+                        <label class="form-label">Cloud Database Mode</label>
+                        <select id="sync-mode" class="form-select">
+                            <option value="sandbox">ApexFlow Shared Sandbox (Default)</option>
+                            <option value="custom">Custom Firebase Project</option>
+                        </select>
+                    </div>
+                    <div id="custom-fb-fields" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                        <div class="form-group margin-bottom-3">
+                            <label for="fb-database-url" class="form-label">Firebase Database URL</label>
+                            <input type="text" id="fb-database-url" class="form-control" placeholder="https://your-project-rtdb.firebaseio.com">
+                        </div>
+                        <div class="form-group margin-bottom-3">
+                            <label for="fb-api-key" class="form-label">API Key (Optional)</label>
+                            <input type="text" id="fb-api-key" class="form-control" placeholder="AIzaSy...">
+                        </div>
+                        <div class="form-group margin-bottom-3">
+                            <label for="fb-project-id" class="form-label">Project ID (Optional)</label>
+                            <input type="text" id="fb-project-id" class="form-control" placeholder="your-project-id">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-sync-modal-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save & Connect</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REOPEN TASK -->
+    <div class="modal-backdrop" id="reopen-task-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Reopen Completed Task</h3>
+                <button class="btn-close-modal" id="close-reopen-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="reopen-task-form">
+                    <input type="hidden" id="reopen-task-id">
+                    <div class="form-group margin-bottom-4">
+                        <label for="reopen-reason" class="form-label">Reason for Reopening</label>
+                        <textarea id="reopen-reason" class="form-control" rows="3" placeholder="Please specify why this work needs to be reopened..." required></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-reopen-modal-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Reopen Work</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script loading -->
+    <script src="app.js"></script>
+</body>
+</html>
