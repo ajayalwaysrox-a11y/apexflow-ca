@@ -8,14 +8,78 @@ datasource db {
 }
 
 model User {
+  id           String   @id @default(uuid())
+  employeeCode String   @unique
+  fullName     String
+  email        String   @unique
+  mobile       String?
+  role         String
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Client {
+  id String @id @default(uuid())
+
+  clientCode String @unique
+
+  clientName String
+
+  businessName String?
+
+  pan String?
+
+  gstin String?
+
+  mobile String?
+
+  email String?
+
+  address String?
+
+  createdBy String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  credentials ClientCredential?
+}
+
+model ClientCredential {
+  id String @id @default(uuid())
+
+  clientId String @unique
+
+  gstUsername String?
+
+  gstPassword String?
+
+  incomeTaxUsername String?
+
+  incomeTaxPassword String?
+
+  client Client @relation(fields: [clientId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+}
+
+model CredentialAuditLog {
   id            String   @id @default(uuid())
-  employeeCode  String   @unique
-  fullName      String
-  email         String   @unique
-  mobile        String?
-  role          String
-  passwordHash  String
-  isActive      Boolean  @default(true)
+
+  clientId      String
+
+  userId        String
+
+  action        String
+
+  fieldName     String?
+
+  remarks       String?
+
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
