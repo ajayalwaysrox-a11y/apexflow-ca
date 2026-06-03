@@ -4,11 +4,14 @@ const {
   getClients,
   createClient
 } = require("../controllers/client.controller");
+const {
+  authenticate
+} = require("../middleware/auth.middleware");
 
 const router = express.Router();
 
-router.get("/", getClients);
+router.get("/", authenticate, getClients);
 
-router.post("/", createClient);
+router.post("/", authenticate, createClient);
 
 module.exports = router;

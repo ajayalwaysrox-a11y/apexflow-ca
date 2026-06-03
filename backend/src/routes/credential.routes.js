@@ -4,11 +4,14 @@ const {
   getCredentials,
   saveCredentials,
 } = require("../controllers/credential.controller");
+const {
+  authenticate
+} = require("../middleware/auth.middleware");
 
 const router = express.Router();
 
-router.get("/:clientId", getCredentials);
+router.get("/:clientId", authenticate, getCredentials);
 
-router.put("/:clientId", saveCredentials);
+router.put("/:clientId", authenticate, saveCredentials);
 
 module.exports = router;

@@ -14,7 +14,7 @@ const getCredentials = async (req, res) => {
     await prisma.credentialAuditLog.create({
       data: {
         clientId,
-        userId: "EMP001",
+        userId: req.user.id ,
         action: "VIEW",
         remarks: "Viewed credential record"
       }
@@ -88,7 +88,7 @@ const saveCredentials = async (req, res) => {
     await prisma.credentialAuditLog.create({
       data: {
         clientId,
-        userId: "EMP001",
+        userId: req.user.id,
         action: "UPDATE",
         remarks: "Updated credential record"
       }
